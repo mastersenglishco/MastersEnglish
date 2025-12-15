@@ -280,7 +280,7 @@ export default function App() {
 
         {/* STEP 1: Choose course type */}
         {step === "type" && (
-          <div className="grid2 fit">
+          <div className="grid3 fit">
             {COURSE_TYPES.map((t) => (
               <Card key={t.id}>
                 <div className="cardHead">
@@ -554,8 +554,12 @@ const css = `
 
   .page{ min-height:100vh; }
 
-  /* Overall page width */
-  .wrap{ max-width: 980px; margin:0 auto; padding: 24px; }
+  /* Overall page width (desktop-friendly: reduces the big side “empty space”) */
+  .wrap{ max-width: 1200px; margin:0 auto; padding: 28px; }
+
+  @media (min-width: 1100px){
+    .wrap{ padding: 32px; }
+  }
 
   /* Sticky header */
   .topbar{
@@ -641,8 +645,8 @@ const css = `
   .btn.ghost:hover{ background:var(--soft); }
   .btn:disabled{ opacity:.6; cursor:not-allowed; }
 
-  /* “fit”: keeps 2-column blocks from stretching too wide */
-  .fit{ max-width: 860px; margin: 0 auto; }
+  /* “fit”: allow wider desktop layout (no huge empty margins) */
+  .fit{ max-width: 1200px; margin: 0 auto; }
 
   .grid2{ display:grid; grid-template-columns: 1fr; gap:16px; }
   .grid3{ display:grid; grid-template-columns: 1fr; gap:16px; }
