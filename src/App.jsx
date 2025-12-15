@@ -26,6 +26,13 @@ const COURSE_TYPES = [
     description:
       "Speaking-focused sessions to improve fluency, confidence, and natural expression.",
   },
+  {
+    id: "placement",
+    title: "Free Placement Test",
+    subtitle: "20–30 minutes (one-time)",
+    description:
+      "A short evaluation call to check your level and recommend the best course + package.",
+  },
 ];
 
 // Packages are grouped per course type
@@ -42,6 +49,15 @@ const PACKAGES = {
     { id: "c10", lessons: 10, price: "$90", title: "Fluency Starter", per: "$9 per lesson" },
     { id: "c20", lessons: 20, price: "$160", title: "Talk-a-Lot Plan", per: "$8 per lesson" },
     { id: "c40", lessons: 40, price: "$280", title: "Conversation Pro", per: "$7 per lesson" },
+  ],
+  placement: [
+    {
+      id: "p1",
+      lessons: 1,
+      price: "Free",
+      title: "Book a Free Placement Test",
+      per: "Free (one-time)",
+    },
   ],
 };
 
@@ -561,8 +577,8 @@ const css = `
     border-radius:14px;
   }
   .brand:hover{ background:var(--soft); }
-  .brandName{ font-weight:900; letter-spacing:-.02em; }
-  .brandSub{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .brandName{ font-weight:900; letter-spacing:-.02em; color:#000; }
+  .brandSub{ font-size:12px; color:#6b7280; margin-top:2px; }
 
   .badge{
     display:inline-flex;
@@ -702,3 +718,4 @@ const css = `
 
   .footer{ border-top:1px solid var(--border); background:#fff; color:#64748b; }
 `;
+
