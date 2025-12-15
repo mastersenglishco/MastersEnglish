@@ -268,7 +268,7 @@ export default function App() {
             <div className="brandName">Masters English</div>
             <div className="brandSub">English Academy</div>
           </button>
-          <Badge>{stepLabel}</Badge>
+          
         </div>
       </header>
 
