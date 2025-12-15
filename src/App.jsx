@@ -400,8 +400,8 @@ export default function App() {
                 How it works
               </div>
               <ol className="list">
-                <li>Apply for a course or a trial call</li>
-                <li>We contact you by email with the next steps</li>
+                <li>Apply for a course</li>
+                <li>We contact you</li>
                 <li>Start learning</li>
               </ol>
             </Card>
