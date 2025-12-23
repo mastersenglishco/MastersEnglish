@@ -730,12 +730,19 @@ const css = `
   }
   .currencyLabel{ font-weight:900; font-size:13px; color:#334155; }
   .curBtn{
-    border:1px solid var(--border);
+    border:1px solid #000;
     background:#fff;
+    color:#000;
     border-radius:999px;
     padding:8px 12px;
     font-weight:900;
     cursor:pointer;
+  }
+  .curBtn:hover{ background:#f1f5f9; }
+  .curBtn.active{
+    background:#000;
+    color:#fff;
+    border-color:#000;
   }
   .curBtn:hover{ background:var(--soft); }
   .curBtn.active{
