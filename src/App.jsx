@@ -29,35 +29,46 @@ const COURSE_TYPES = [
   {
     id: "placement",
     title: "Free Placement Test",
-    subtitle: "20–30 minutes (one-time)",
+    subtitle: "60–90 minutes (one-time)",
     description:
       "A short evaluation call to check your level and recommend the best course + package.",
+    },
+    {
+    id: "trial",
+    title: "Free Trial",
+    subtitle: "15–30 minutes (one-time)",
+    description:
+      "A short trial session to introduce the class style, discuss your goals, and recommend the best next step.",
   },
 ];
 
 // Packages are grouped per course type
+// Currency config
+const CURRENCIES = {
+  USD: { label: "USD", symbol: "$" },
+  KWD: { label: "KWD", symbol: "KWD " },
+};
+
+// Packages are grouped per course type (prices mapped per currency)
 const PACKAGES = {
   main: [
-    { id: "m1", lessons: 1, price: "$15", title: "Quick Start", per: "$15 per lesson" },
-    { id: "m10", lessons: 10, price: "$140", title: "Starter Pack", per: "$14 per lesson" },
-    { id: "m20", lessons: 20, price: "$260", title: "Momentum Month", per: "$13 per lesson" },
-    { id: "m40", lessons: 40, price: "$480", title: "Consistency Plan", per: "$12 per lesson" },
-    { id: "m80", lessons: 80, price: "$880", title: "Full Level Journey", per: "$11 per lesson" },
+    { id: "m1", lessons: 1, price: { USD: 15, KWD: 5 }, title: "Quick Start", per: { USD: "$15 per lesson", KWD: "5 KWD per lesson" } },
+    { id: "m10", lessons: 10, price: { USD: 140, KWD: 45 }, title: "Starter Pack", per: { USD: "$14 per lesson", KWD: "4.5 KWD per lesson" } },
+    { id: "m20", lessons: 20, price: { USD: 260, KWD: 80 }, title: "Momentum Month", per: { USD: "$13 per lesson", KWD: "4 KWD per lesson" } },
+    { id: "m40", lessons: 40, price: { USD: 480, KWD: 150 }, title: "Consistency Plan", per: { USD: "$12 per lesson", KWD: "3.75 KWD per lesson" } },
+    { id: "m80", lessons: 80, price: { USD: 880, KWD: 270 }, title: "Full Level Journey", per: { USD: "$11 per lesson", KWD: "3.4 KWD per lesson" } },
   ],
   conv: [
-    { id: "c1", lessons: 1, price: "$10", title: "Warm-Up Chat", per: "$10 per lesson" },
-    { id: "c10", lessons: 10, price: "$90", title: "Fluency Starter", per: "$9 per lesson" },
-    { id: "c20", lessons: 20, price: "$160", title: "Talk-a-Lot Plan", per: "$8 per lesson" },
-    { id: "c40", lessons: 40, price: "$280", title: "Conversation Pro", per: "$7 per lesson" },
+    { id: "c1", lessons: 1, price: { USD: 10, KWD: 3 }, title: "Warm-Up Chat", per: { USD: "$10 per lesson", KWD: "3 KWD per lesson" } },
+    { id: "c10", lessons: 10, price: { USD: 90, KWD: 28 }, title: "Fluency Starter", per: { USD: "$9 per lesson", KWD: "2.8 KWD per lesson" } },
+    { id: "c20", lessons: 20, price: { USD: 160, KWD: 50 }, title: "Talk-a-Lot Plan", per: { USD: "$8 per lesson", KWD: "2.5 KWD per lesson" } },
+    { id: "c40", lessons: 40, price: { USD: 280, KWD: 86 }, title: "Conversation Pro", per: { USD: "$7 per lesson", KWD: "2.15 KWD per lesson" } },
   ],
   placement: [
-    {
-      id: "p1",
-      lessons: 1,
-      price: "Free",
-      title: "Book a Free Placement Test",
-      per: "Free (one-time)",
-    },
+    { id: "p1", lessons: 1, price: { USD: 0, KWD: 0 }, title: "Book a Free Placement Test", per: { USD: "Free (one-time)", KWD: "Free (one-time)" } },
+  ],
+  trial: [
+    { id: "t1", lessons: 1, price: { USD: 0, KWD: 0 }, title: "Book a Free Trial", per: { USD: "Free (one-time)", KWD: "Free (one-time)" } },
   ],
 };
 
@@ -124,6 +135,9 @@ export default function App() {
   const [typeId, setTypeId] = useState(null);
   const [packageId, setPackageId] = useState(null);
 
+  // Currency (chosen from the beginning)
+  const [currency, setCurrency] = useState("USD");
+
   /**
    * Derived selections:
    * useMemo prevents re-finding objects on every render unless dependencies change.
@@ -138,12 +152,36 @@ export default function App() {
     return PACKAGES[typeId].find((p) => p.id === packageId) || null;
   }, [typeId, packageId]);
 
+  // Currency helpers
+  const safeCurrency = CURRENCIES[currency] ? currency : "USD";
+  const money = (amount) => `${CURRENCIES[safeCurrency].symbol}${amount}`;
+
+  const pkgTotal = (pkg) => {
+    if (!pkg) return "";
+    const amount = pkg.price?.[safeCurrency] ?? pkg.price?.USD ?? 0;
+    if (amount === 0) return "Free";
+    return money(amount);
+  };
+
+  const pkgPer = (pkg) => {
+    if (!pkg) return "";
+    const perStr = pkg.per?.[safeCurrency];
+    if (perStr) return perStr;
+    const amount = pkg.price?.[safeCurrency] ?? pkg.price?.USD ?? 0;
+    const per = pkg.lessons ? amount / pkg.lessons : amount;
+    const rounded = Number.isFinite(per) ? Math.round(per * 100) / 100 : per;
+    return safeCurrency === "USD" ? `${CURRENCIES[safeCurrency].symbol}${rounded} per lesson` : `${rounded} KWD per lesson`;
+  };
+
   // Form data (controlled fields)
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     phone: "",
     country: "",
+    // Required for Free Trial / Placement Test / Single lessons
+    preferredDate: "",
+    preferredTime: "",
   });
 
   // Basic submit state to improve UX
@@ -156,18 +194,33 @@ export default function App() {
    * - prevents empty sends
    * - disables submit button until form is ready
    */
+  const needsSchedule =
+    // Free options
+    selectedType?.id === "trial" ||
+    selectedType?.id === "placement" ||
+    // Paid single lessons (the 1-lesson options in Main/Conversational)
+    selectedPackage?.lessons === 1;
+
   const isFormValid =
     formData.fullName.trim() &&
     formData.email.trim() &&
     formData.phone.trim() &&
-    formData.country.trim();
+    formData.country.trim() &&
+    (!needsSchedule || (formData.preferredDate.trim() && formData.preferredTime.trim()));
 
   // Reset everything back to Step 1
   const reset = () => {
     setStep("type");
     setTypeId(null);
     setPackageId(null);
-    setFormData({ fullName: "", email: "", phone: "", country: "" });
+    setFormData({
+      fullName: "",
+      email: "",
+      phone: "",
+      country: "",
+      preferredDate: "",
+      preferredTime: "",
+    });
     setIsSubmitting(false);
     setSubmitStatus(null);
     setSubmitMessage("");
@@ -207,6 +260,8 @@ export default function App() {
         email: formData.email,
         phone: formData.phone,
         country: formData.country,
+        preferredDate: needsSchedule ? formData.preferredDate : "",
+        preferredTime: needsSchedule ? formData.preferredTime : "",
 
         // Extra context (very useful in the email you receive)
         courseType: selectedType.title,
@@ -214,8 +269,10 @@ export default function App() {
         packageTitle: selectedPackage.title,
         packageId: selectedPackage.id,
         lessons: selectedPackage.lessons,
-        price: selectedPackage.price,
-        pricePerLesson: selectedPackage.per,
+        currency: safeCurrency,
+        totalPrice: selectedPackage.price?.[safeCurrency] ?? selectedPackage.price?.USD ?? 0,
+        displayTotalPrice: pkgTotal(selectedPackage),
+        displayPricePerLesson: pkgPer(selectedPackage),
       };
 
       const res = await fetch(FORMSPREE_ENDPOINT, {
@@ -275,7 +332,25 @@ export default function App() {
       <main className="wrap">
         <div className="hero">
           <h1>Pricing & Packages</h1>
-          <p>Choose a course type → choose a package → apply.</p>
+          <p>Choose a currency → choose a course type → choose a package → apply.</p>
+
+          <div className="currencyPicker" aria-label="Choose currency">
+            <span className="currencyLabel">Currency:</span>
+            <button
+              type="button"
+              className={`curBtn ${safeCurrency === "USD" ? "active" : ""}`}
+              onClick={() => setCurrency("USD")}
+            >
+              USD
+            </button>
+            <button
+              type="button"
+              className={`curBtn ${safeCurrency === "KWD" ? "active" : ""}`}
+              onClick={() => setCurrency("KWD")}
+            >
+              KWD
+            </button>
+          </div>
         </div>
 
         {/* STEP 1: Choose course type */}
@@ -337,9 +412,9 @@ export default function App() {
                     <div>
                       <div className="kicker">{selectedType.title}</div>
                       <div className="title">{p.title}</div>
-                      <div className="sub">{p.per}</div>
+                      <div className="sub">{pkgPer(p)}</div>
                     </div>
-                    <Badge className="price">{p.price}</Badge>
+                    <Badge className="price">{pkgTotal(p)}</Badge>
                   </div>
 
                   <div className="pillRow">
@@ -372,9 +447,9 @@ export default function App() {
                 <div>
                   <div className="kicker">{selectedType.title}</div>
                   <div className="title">{selectedPackage.title}</div>
-                  <div className="sub">{selectedPackage.per}</div>
+                  <div className="sub">{pkgPer(selectedPackage)}</div>
                 </div>
-                <Badge className="price">{selectedPackage.price}</Badge>
+                <Badge className="price">{pkgTotal(selectedPackage)}</Badge>
               </div>
 
               <div className="detailBox">
@@ -420,7 +495,7 @@ export default function App() {
                   </div>
                   <div className="sub">
                     {selectedPackage.lessons} lesson{selectedPackage.lessons === 1 ? "" : "s"} •{" "}
-                    {selectedPackage.price}
+                    {pkgTotal(selectedPackage)}
                   </div>
                 </div>
                 <Badge>Step 4</Badge>
@@ -472,6 +547,34 @@ export default function App() {
                   />
                 </div>
 
+                {/* Only for Free Trial / Placement Test / Single lessons */}
+                {needsSchedule && (
+                  <div className="detailBox" style={{ marginTop: 4 }}>
+                    <div className="detailTitle">Preferred date & time</div>
+                    <div className="grid2small" style={{ marginTop: 10 }}>
+                      <Field
+                        label="Preferred date"
+                        name="preferredDate"
+                        type="date"
+                        value={formData.preferredDate}
+                        onChange={(v) => setFormData((d) => ({ ...d, preferredDate: v }))}
+                        required
+                      />
+                      <Field
+                        label="Preferred time"
+                        name="preferredTime"
+                        type="time"
+                        value={formData.preferredTime}
+                        onChange={(v) => setFormData((d) => ({ ...d, preferredTime: v }))}
+                        required
+                      />
+                    </div>
+                    <div className="sub" style={{ marginTop: 8 }}>
+                      We’ll confirm the exact time by email.
+                    </div>
+                  </div>
+                )}
+
                 {/* Submission feedback */}
                 {submitStatus && (
                   <div
@@ -514,8 +617,18 @@ export default function App() {
                     <strong>Lessons:</strong> {selectedPackage.lessons}
                   </div>
                   <div>
-                    <strong>Total price:</strong> {selectedPackage.price}
+                    <strong>Total price:</strong> {pkgTotal(selectedPackage)}
                   </div>
+                  {needsSchedule && (
+                    <>
+                      <div>
+                        <strong>Preferred date:</strong> {formData.preferredDate || "—"}
+                      </div>
+                      <div>
+                        <strong>Preferred time:</strong> {formData.preferredTime || "—"}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </Card>
@@ -607,6 +720,29 @@ const css = `
   h1{ margin:0; font-size:34px; letter-spacing:-.03em; }
   h2{ margin:6px 0 0; font-size:22px; letter-spacing:-.02em; }
   .hero p{ margin:8px 0 0; color:var(--muted); }
+
+  .currencyPicker{
+    margin-top:14px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .currencyLabel{ font-weight:900; font-size:13px; color:#334155; }
+  .curBtn{
+    border:1px solid var(--border);
+    background:#fff;
+    border-radius:999px;
+    padding:8px 12px;
+    font-weight:900;
+    cursor:pointer;
+  }
+  .curBtn:hover{ background:var(--soft); }
+  .curBtn.active{
+    background:#0f172a;
+    color:#fff;
+    border-color:#0f172a;
+  }
 
   .card{
     background:var(--card);
